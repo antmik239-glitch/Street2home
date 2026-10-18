@@ -1,0 +1,22 @@
+package com.quinonescreative.street2home;
+import android.app.*;import android.os.*;import android.content.*;import android.net.Uri;import android.graphics.Color;import android.view.*;import android.widget.*;import java.util.*;
+public class MainActivity extends Activity {
+ int bg=0xff10161c,card=0xff242d35,orange=0xffff963c; LinearLayout main,body; SharedPreferences prefs; String filter="";
+ String[][] places={{"Handy Foods","Food","Ottawa, Illinois","Ask about current food assistance availability."},{"Illinois Valley PADS","Shelter","Ottawa area","Contact outreach to confirm shelter options."},{"Ottawa YMCA","Showers","Ottawa, Illinois","Confirm shower access and fees."},{"Salvation Army","Clothing","Ottawa, Illinois","Ask about clothing and assistance."},{"Reddick Public Library","Wi-Fi","Ottawa, Illinois","Check current computer and Wi-Fi hours."},{"Illinois Secretary of State","ID Help","Ottawa, Illinois","Confirm required ID documents."},{"Illinois workNet","Jobs","Illinois","Employment resources."},{"Community Support","Health","Ottawa, Illinois","Dial 211 for referrals."}};
+ public void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences("saved",0);show("Home");}
+ TextView text(String s,int size){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(-1);t.setPadding(18,18,18,18);return t;}
+ void add(String s,Runnable r){TextView t=text(s,17);t.setBackgroundColor(card);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(8,6,8,6);body.addView(t,p);if(r!=null)t.setOnClickListener(v->r.run());}
+ void show(String page){main=new LinearLayout(this);main.setOrientation(1);main.setBackgroundColor(bg);setContentView(main);TextView header=text("Street2Home  •  OTTAWA, IL",22);header.setTextColor(orange);main.addView(header);ScrollView scroll=new ScrollView(this);body=new LinearLayout(this);body.setOrientation(1);scroll.addView(body);main.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+ if(page.equals("Home")){add("Resources. Support. A path forward.",null);for(String c:new String[]{"Food","Shelter","Showers","Clothing","Wi-Fi","Jobs","ID Help","Health"})add(c,()->{filter=c;show("Resources");});add("Jobs & ID Help",()->show("Jobs & ID Help"));add("Offline & Settings",()->show("Settings"));}
+ else if(page.equals("Resources")){add("Resource List",null);add("Show all",()->{filter="";show("Resources");});for(String[] p:places)if(filter.isEmpty()||filter.equals(p[1]))add(p[0]+" • "+p[1],()->detail(p));}
+ else if(page.equals("Saved")){add("Saved Places",null);for(String[] p:places)if(prefs.getBoolean(p[0],false))add(p[0],()->detail(p));}
+ else if(page.equals("Map")){add("Offline list works without internet; online map needs a connection.",null);add("Open Ottawa map",()->open("geo:0,0?q=Ottawa Illinois"));for(String[] p:places)add(p[0],()->detail(p));}
+ else if(page.equals("Help Now")){add("Emergency • Call 911",()->dial("911"));add("988 Crisis Lifeline",()->dial("988"));add("Community services • 211",()->dial("211"));}
+ else if(page.equals("Jobs & ID Help")){add("Illinois workNet",()->open("https://www.illinoisworknet.com/"));add("Illinois Secretary of State",()->open("https://www.ilsos.gov/"));add("Transportation support",()->{filter="Shelter";show("Resources");});}
+ else if(page.equals("Settings")){add("Offline directory included. Saved places stay on this device. Verify resource details before traveling.",null);}
+ LinearLayout nav=new LinearLayout(this);for(String tab:new String[]{"Home","Resources","Map","Saved","Help Now"}){TextView t=text(tab,11);t.setGravity(17);nav.addView(t,new LinearLayout.LayoutParams(0,65,1));t.setOnClickListener(v->show(tab));}main.addView(nav);
+ }
+ void detail(String[] p){show("Details");add(p[0]+"\n"+p[1]+" • "+p[2]+"\n"+p[3]+"\nInformation not live-verified.",null);add(prefs.getBoolean(p[0],false)?"Unsave":"Save",()->{prefs.edit().putBoolean(p[0],!prefs.getBoolean(p[0],false)).apply();detail(p);});add("Directions",()->open("geo:0,0?q="+Uri.encode(p[0]+" "+p[2])));add("Back",()->show("Resources"));}
+ void dial(String n){startActivity(new Intent(Intent.ACTION_DIAL,Uri.parse("tel:"+n)));}
+ void open(String u){try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(u)));}catch(Exception e){Toast.makeText(this,"No app available",0).show();}}
+}
